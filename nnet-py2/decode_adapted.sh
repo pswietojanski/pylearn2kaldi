@@ -22,9 +22,10 @@ transform_dir= #
 ctx_win=4
 norm_vars=false
 asclite=true
-model_yaml=
 model_conf=
-model_pytables=
+decoder_yaml=
+model_pytables_si=
+model_pytables_sd=
 model_pkl=
 scoring_cmd=
 
@@ -90,11 +91,14 @@ else
 fi
 
 # splice the features for the context window:
+#TODO: use p2 preporocessors to do splicing
 splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
 feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
 
 # get the forward prop pipeline
-feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --model-pkl ${model_pkl}JOB.pkl --priors $class_frame_counts |"
+feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py \
+       --debug False --decoder-yaml $decoder_yaml --model-pytables $model_pytables_si \
+       --model-pytables-sd ${model_pytables_sd}JOB.h5 --priors $class_frame_counts |"
 
 echo "$0: decoding with adapted model"
 # Run the decoding in the queue
