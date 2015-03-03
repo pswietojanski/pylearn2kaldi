@@ -101,7 +101,7 @@ feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
 
 # get the forward prop pipeline
 feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --model-yaml $model_yaml \
---model-pytables $model_pytables --priors $class_frame_counts |"
+--model-pytables-si $model_pytables --priors $class_frame_counts |"
 
 if [[ $stage -le 0 && -z "$align_dir" ]]; then
 
@@ -115,18 +115,21 @@ if [[ $stage -le 0 && -z "$align_dir" ]]; then
   #  compile-train-graphs $dir/tree $dir/final.mdl  $lang/L.fst "$tra" ark:- \| \
   #  align-compiled-mapped $scale_opts --beam=$beam --retry-beam=$retry_beam $dir/final.mdl ark:- \
   #    "$feats" "ark,t:|gzip -c >$dir/ali.JOB.gz" || exit 1
-  LMWT=13
-  $cmd JOB=1:$nj $dir/log/best_path.JOB.log lattice-best-path --lm-scale=$LMWT --word-symbol-table=$lang/words.txt \
-    "ark:gunzip -c $sidir_dec/lat.JOB.gz|" ark,t:$dir/JOB.tra "ark:|gzip -c > $dir/ali.JOB.gz" || exit 1;
+  LMWT=12
+  #$cmd JOB=1:$nj $dir/log/best_path.JOB.log lattice-best-path --lm-scale=$LMWT --word-symbol-table=$lang/words.txt \
+  #  "ark:gunzip -c $sidir_dec/lat.*.gz|" ark,t:$dir/JOB.tra "ark:|gzip -c > $dir/ali.JOB.gz" || exit 1;
 
-  ali-to-pdf $dir/final.mdl ark:"gunzip -c $dir/ali.*.gz |" \
-     ark,t:"$dir/ali.pdf" 2> $dir/ali2pdf.log || exit 1
+  $cmd JOB=1:1 $dir/ali2pdf.log ali-to-pdf $dir/final.mdl ark:"gunzip -c $dir/ali.*.gz |" \
+     ark,t:"$dir/ali.pdf" || exit 1
   
   alipdf=$dir/ali.pdf
 
 #elif [ ! -z "$align_dir" ]; then
 #  echo 'Not implemented'; exit 1;
 else
+  if [ -z "$align_dir" ]; then
+    align_dir=$dir
+  fi
   echo "Using $align_dir/ali.pdf as the targets"
   alipdf=$align_dir/ali.pdf
 fi

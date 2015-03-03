@@ -22,9 +22,9 @@ transform_dir= #
 ctx_win=4
 norm_vars=false
 asclite=true
-model_yaml=
+decoder_yaml=
 model_conf=
-model_pytables=
+model_pytables_si=
 scoring_cmd=
 
 # End configuration section.
@@ -62,7 +62,8 @@ dir=$3
 srcdir=`dirname $dir`; # The model directory is one level up from decoding directory.
 sdata=$data/split$nj;
 
-[[ -f $model_yaml && -f $model_pytables && -f $model_conf ]] || exit 1;
+[[ -f $decoder_yaml && -f $model_pytables_si && -f $model_conf ]] || \
+   echo "decoder and/or parameters and/or conf file is missing" || exit 1;
 
 if [ -z "$scoring_cmd" ]; then
   scoring_cmd=$cmd
@@ -125,8 +126,8 @@ splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
 feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
 
 # Finally add feature_transform and the MLP
-feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --model-yaml $model_yaml \
---model-pytables $model_pytables --priors $class_frame_counts |"
+feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --decoder-yaml $decoder_yaml \
+--model-pytables $model_pytables_si --priors $class_frame_counts |"
 
 # Run the decoding in the queue
 $cmd JOB=1:$nj $dir/log/decode.JOB.log \
