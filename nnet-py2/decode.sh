@@ -77,15 +77,6 @@ if [ -z "$model" ]; then # if --model <mdl> was not specified on the command lin
   model=$srcdir/final.mdl;
 fi
 
-# # find the feature_transform to use
-# if [ -z "$feature_transform" ]; then
-#   feature_transform=$srcdir/$(readlink $srcdir/final.feature_transform)
-# fi
-# if [ ! -f $feature_transform ]; then
-#   echo "Missing feature_transform '$feature_transform'"
-#   exit 1
-# fi
-
 for f in $sdata/1/feats.scp $nnet $model $graphdir/HCLG.fst;
 do
   [ ! -f $f ] && echo "$0: no such file $f" && exit 1;
@@ -98,28 +89,6 @@ if [ "" == "$class_frame_counts" ]; then
 else
   echo "Overriding class_frame_counts by $class_frame_counts"
 fi
-
-# We use the pre-computed CMVN as well as pre-defined splicing
-
-# [ -f $srcdir/norm_vars ] && norm_vars=$(cat $srcdir/norm_vars 2>/dev/null)
-# lda_splice_opts=$(cat $srcdir/lda_splice_opts 2>/dev/null)
-# 
-# if [ -f $srcdir/final_XXX.mat ]; then feat_type=lda; else feat_type=delta; fi
-# echo "$0: feature type is $feat_type";
-# 
-# case $feat_type in
-#   delta) feats="ark,s,cs:apply-cmvn --norm-vars=$norm_vars --utt2spk=ark:$sdata/JOB/utt2spk scp:$sdata/JOB/cmvn.scp scp:$sdata/JOB/feats.scp ark:- | add-deltas ark:- ark:- |";;
-#   lda) feats="ark,s,cs:apply-cmvn --norm-vars=$norm_vars --utt2spk=ark:$sdata/JOB/utt2spk scp:$sdata/JOB/cmvn.scp scp:$sdata/JOB/feats.scp ark:- | splice-feats $lda_splice_opts ark:- ark:- | transform-feats $srcdir/final.mat ark:- ark:- |";;
-#   *) echo "Invalid feature type $feat_type" && exit 1;
-# esac
-
-# if [ ! -z "$transform_dir" ]; then # add transforms to features...
-#   echo "Using fMLLR transforms from $transform_dir"
-#   [ ! -f $transform_dir/trans.1 ] && echo "Expected $transform_dir/trans.1 to exist." && exit 1
-#   [ "`cat $transform_dir/num_jobs`" -ne $nj ] && \
-#     echo "Mismatch in number of jobs with $transform_dir" && exit 1;
-#   feats="$feats transform-feats --utt2spk=ark:$sdata/JOB/utt2spk ark:$transform_dir/trans.JOB ark:- ark:- |"
-# fi
 
 # splice the features for the context window:
 splice_opts="--left-context=$ctx_win --right-context=$ctx_win"

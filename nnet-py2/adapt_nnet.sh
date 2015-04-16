@@ -116,8 +116,8 @@ if [[ $stage -le 0 && -z "$align_dir" ]]; then
   #  align-compiled-mapped $scale_opts --beam=$beam --retry-beam=$retry_beam $dir/final.mdl ark:- \
   #    "$feats" "ark,t:|gzip -c >$dir/ali.JOB.gz" || exit 1
   LMWT=12
-  #$cmd JOB=1:$nj $dir/log/best_path.JOB.log lattice-best-path --lm-scale=$LMWT --word-symbol-table=$lang/words.txt \
-  #  "ark:gunzip -c $sidir_dec/lat.*.gz|" ark,t:$dir/JOB.tra "ark:|gzip -c > $dir/ali.JOB.gz" || exit 1;
+  $cmd JOB=1:$nj $dir/log/best_path.JOB.log lattice-best-path --lm-scale=$LMWT --word-symbol-table=$lang/words.txt \
+    "ark:gunzip -c $sidir_dec/lat.*.gz|" ark,t:$dir/JOB.tra "ark:|gzip -c > $dir/ali.JOB.gz" || exit 1;
 
   $cmd JOB=1:1 $dir/ali2pdf.log ali-to-pdf $dir/final.mdl ark:"gunzip -c $dir/ali.*.gz |" \
      ark,t:"$dir/ali.pdf" || exit 1
