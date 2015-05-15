@@ -16,6 +16,7 @@ acwt=0.1
 max_active=5000
 nnet=
 max_mem=20000000 # This will stop the processes getting too large.
+ctx_win=4
 # This is in bytes, but not "real" bytes-- you have to multiply
 # by something like 5 or 10 to get real bytes (not sure why so large)
 
@@ -93,9 +94,9 @@ fi
 cp $srcdir/{tree,final.mdl} $dir
 
 # Select default locations to model files
-[ -z "$nnet" ] && nnet=$srcdir/final.nnet;
-class_frame_counts=$srcdir/ali_train_pdf.counts
-feature_transform=$srcdir/final.feature_transform
+#[ -z "$nnet" ] && nnet=$srcdir/final.nnet;
+class_frame_counts=$srcdir/ali_train.counts
+#feature_transform=$srcdir/final.feature_transform
 model=$dir/final.mdl
 
 # Check that files exist
