@@ -63,7 +63,7 @@ for f in $sdata/1/feats.scp $sdata/1/cmvn.scp; do
 done
 
 if [ -f $gmmdir/final.mat ]; then feat_type=lda; else feat_type=delta; fi
-echo "$0: feature type is $feat_type";
+echo "$0: feature type is $feat_type with cmvn opts $cmvn_opts"
 
 case $feat_type in
   delta) feats="ark,s,cs:apply-cmvn $cmvn_opts --utt2spk=ark:$sdata/JOB/utt2spk scp:$sdata/JOB/cmvn.scp scp:$sdata/JOB/feats.scp ark:- | add-deltas ark:- ark:- |";;

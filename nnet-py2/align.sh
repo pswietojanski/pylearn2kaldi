@@ -73,9 +73,10 @@ done
 # PREPARE FEATURE EXTRACTION PIPELINE
 # splice the features for the context window:
 splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
-feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
+#feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
+feats="ark:copy-feats scp:$sdata/JOB/feats.scp ark:- |"
 # Finally add feature_transform and the MLP
-feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --decoder-yaml $decoder_yaml \
+feats="$feats ptgl.sh --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --decoder-yaml $decoder_yaml \
 --model-pytables $model_pytables_si --priors $class_frame_counts |"
 
 echo "$0: aligning data '$data' using nnet/model '$srcdir', putting alignments in '$dir'"

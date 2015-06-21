@@ -11,7 +11,7 @@ alidir=$1
 dir=$2
 suffix=$3
 
-if [ ! -f $alidir/final.mdl -o ! -f $alidir/ali.1.gz ]; then
+if [[ ! -f $alidir/final.mdl || ! -f $alidir/ali.1.gz ]]; then
   echo "Error: alignment dir $alidir does not contain final.mdl or ali"
   exit 1;
 fi

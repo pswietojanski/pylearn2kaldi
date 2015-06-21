@@ -28,6 +28,7 @@ model_pytables_si=
 model_pytables_sd=
 model_pkl=
 scoring_cmd=
+do_splicing=false
 
 # End configuration section.
 
@@ -91,9 +92,13 @@ else
 fi
 
 # splice the features for the context window:
-#TODO: use p2 preporocessors to do splicing
-splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
-feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
+if $do_splicing; then
+  splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
+  feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
+  echo "Splicing using Kaldi tools."
+else
+  feats="ark:copy-feats scp:$sdata/JOB/feats.scp ark:- |"
+fi
 
 # get the forward prop pipeline
 feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py \
