@@ -17,7 +17,7 @@ echo "$0 $@"  # Print the command line for logging
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 . parse_options.sh || exit 1;
 
-if [ $# != 5 ]; then
+if [ $# != 3 ]; then
    echo "Usage: $0 [options] <tgt-data-dir> <src-data-dir> <gmm-dir> <log-dir> <fea-dir>"
    echo "e.g.: $0 data-fmllr/train data/train exp/tri5a exp/make_fmllr_feats/log plp/processed/"
    echo ""
@@ -38,8 +38,9 @@ fi
 data=$1
 srcdata=$2
 gmmdir=$3
-logdir=$4
-feadir=$5
+
+logdir=$data/log
+feadir=$data/data
 
 sdata=$srcdata/split$nj;
 splice_opts=`cat $gmmdir/splice_opts 2>/dev/null` # frame-splicing options.
@@ -75,6 +76,13 @@ if [ ! -z "$transform_dir" ]; then # add transforms to features...
   echo "Using fMLLR transforms from $transform_dir"
   [ ! -f $transform_dir/trans.1 ] && echo "Expected $transform_dir/trans.1 to exist." && exit 1
   feats="$feats transform-feats --utt2spk=ark:$sdata/JOB/utt2spk \"ark:cat $transform_dir/trans.* |\" ark:- ark:- |"
+fi
+
+if [ $glob_cmvn ]; then
+  echo "Computing global CMVN stats"
+  cmvnfeats=`echo $feats | sed -r "s?$sdata/JOB?$srcdata?g"`
+  compute-cmvn-stats "$cmvnfeats" $data/cmvn_glob || exit 1;
+  feats="$feats apply-cmvn --norm-means=true --norm-vars=true $data/cmvn_glob ark:- ark:- |"
 fi
 
 # prepare the dir

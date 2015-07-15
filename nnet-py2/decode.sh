@@ -12,7 +12,7 @@ class_frame_counts= # You can specify frame count to compute PDF priors
 nj=4
 cmd=run.pl
 max_active=7000
-beam=17.0 # GMM:13.0
+beam=14.0 # GMM:13.0
 latbeam=9.0 # GMM:6.0
 acwt=0.10 # GMM:0.0833, note: only really affects pruning (scoring is on lattices).
 min_lmwt=9
@@ -24,7 +24,7 @@ norm_vars=false
 asclite=true
 decoder_yaml=
 model_conf=
-model_pytables_si=
+model_pytables=
 scoring_cmd=
 do_splicing=false
 
@@ -63,8 +63,12 @@ dir=$3
 srcdir=`dirname $dir`; # The model directory is one level up from decoding directory.
 sdata=$data/split$nj;
 
-[[ -f $decoder_yaml && -f $model_pytables_si && -f $model_conf ]] || \
+[[ -f $decoder_yaml && -f $model_conf ]] || \
    echo "decoder and/or parameters and/or conf file is missing" || exit 1;
+
+for pytable in $model_pytables; do 
+  [ ! -f $pytable ] && echo "File $pytable not found." && exit 1;
+done
 
 if [ -z "$scoring_cmd" ]; then
   scoring_cmd=$cmd
@@ -103,7 +107,7 @@ fi
 # Finally add feature_transform and the MLP
 #--priors $class_frame_counts 
 feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --decoder-yaml $decoder_yaml \
---model-pytables $model_pytables_si --priors $class_frame_counts |"
+--model-pytables \"$model_pytables\" --priors $class_frame_counts |"
 
 # Run the decoding in the queue
 $cmd JOB=1:$nj $dir/log/decode.JOB.log \

@@ -14,7 +14,7 @@ cmd=run.pl
 max_active=7000
 beam=17.0 # GMM:13.0
 latbeam=9.0 # GMM:6.0
-acwt=0.12 # GMM:0.0833, note: only really affects pruning (scoring is on lattices).
+acwt=0.10 # GMM:0.0833, note: only really affects pruning (scoring is on lattices).
 min_lmwt=9
 max_lmwt=15
 score_args=
@@ -24,7 +24,7 @@ norm_vars=false
 asclite=true
 model_conf=
 decoder_yaml=
-model_pytables_si=
+model_pytables=
 model_pytables_sd=
 model_pkl=
 scoring_cmd=
@@ -102,8 +102,9 @@ fi
 
 # get the forward prop pipeline
 feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py \
-       --debug False --decoder-yaml $decoder_yaml --model-pytables $model_pytables_si \
-       --model-pytables-sd ${model_pytables_sd}JOB.h5 --priors $class_frame_counts |"
+       --debug False --decoder-yaml $decoder_yaml \
+       --model-pytables \"$model_pytables ${model_pytables_sd}JOB.h5\" \
+       --priors $class_frame_counts |"
 
 echo "$0: decoding with adapted model"
 # Run the decoding in the queue

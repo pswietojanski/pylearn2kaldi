@@ -69,8 +69,12 @@ sdata=$data/split$nj;
 sidir=`dirname $adapt_yaml`
 sidir_dec=$5 #this is the 1st pass dir with lattices
 
-[[ -f $model_yaml && -f $model_pytables && -f $model_conf ]] || exit 1;
+[[ -f $model_yaml && -f $model_conf ]] || exit 1;
 #oov=`cat $lang/oov.int` || exit 1;
+
+for pytable in $model_pytables; do
+  [ ! -f $pytable ] && echo "File $pytable not found." && exit 1;
+done
 
 mkdir -p $dir/log
 [[ -d $sdata && $data/feats.scp -ot $sdata ]] || split_data.sh $data $nj || exit 1;
@@ -101,7 +105,7 @@ feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
 
 # get the forward prop pipeline
 feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --model-yaml $model_yaml \
---model-pytables-si $model_pytables --priors $class_frame_counts |"
+--model-pytables \"$model_pytables\" --priors $class_frame_counts |"
 
 if [[ $stage -le 0 && -z "$align_dir" ]]; then
 
@@ -139,7 +143,7 @@ echo "$0: adapting si-model $dir to speaker"
 #speaker adaptation, the lists are already split per speakers
 $cmd JOB=1:$nj $dir/log/adapt.JOB.log \
    ptgl.sh --cpu --use-sge --cnn-conf $model_conf adaptation.py --job JOB --adapt-yaml $adapt_yaml \
-      --freeze-regex "\"$freeze_regex\"" \
+      --model-pytables $model_pytables --freeze-regex "\"$freeze_regex\"" \
       $sidir $dir $sdata/JOB/feats.scp $alipdf
 
 exit 0;

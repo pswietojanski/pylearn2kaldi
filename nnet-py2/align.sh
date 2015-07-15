@@ -9,6 +9,7 @@ scale_opts="--transition-scale=1.0 --acoustic-scale=0.1 --self-loop-scale=0.1"
 beam=10
 retry_beam=40
 ctx_win=
+do_splicing=false
 
 align_to_lats=false # optionally produce alignment in lattice format
 lats_decode_opts="--acoustic-scale=0.1 --beam=20 --lattice_beam=10"
@@ -33,6 +34,9 @@ if [ $# != 4 ]; then
    echo "  --config <config-file>                           # config containing options"
    echo "  --nj <nj>                                        # number of parallel jobs"
    echo "  --cmd (utils/run.pl|utils/queue.pl <queue opts>) # how to run jobs."
+   echo "  --decoder-yaml  "
+   echo "  --model-conf  "
+   echo "  --model-pytables-si  "
    exit 1;
 fi
 
@@ -72,9 +76,13 @@ done
 
 # PREPARE FEATURE EXTRACTION PIPELINE
 # splice the features for the context window:
-splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
-#feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
-feats="ark:copy-feats scp:$sdata/JOB/feats.scp ark:- |"
+if $do_splicing; then
+  splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
+  feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
+else
+  feats="ark:copy-feats scp:$sdata/JOB/feats.scp ark:- |"
+fi
+
 # Finally add feature_transform and the MLP
 feats="$feats ptgl.sh --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --decoder-yaml $decoder_yaml \
 --model-pytables $model_pytables_si --priors $class_frame_counts |"
