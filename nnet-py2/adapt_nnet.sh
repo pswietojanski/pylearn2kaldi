@@ -11,10 +11,11 @@ model= # You can specify the transition model to use (e.g. if you want to use th
 class_frame_counts= # You can specify frame count to compute PDF priors 
 nj=4
 cmd=run.pl
+best_path_cmd=
 max_active=7000
-beam=17.0 # GMM:13.0
+beam=13.0 # GMM:13.0
 latbeam=9.0 # GMM:6.0
-acwt=0.12 # GMM:0.0833, note: only really affects pruning (scoring is on lattices).
+acwt=0.1 # GMM:0.0833, note: only really affects pruning (scoring is on lattices).
 min_lmwt=9
 max_lmwt=15
 score_args=
@@ -31,6 +32,8 @@ align_dir=
 stage=0
 retry_beam=40
 freeze_regex="softmax_[Wb]|h[0-9]_[Wb]|nlrf_[Wb]"
+do_splicing=false
+oracle=false
 # End configuration section.
 
 echo "$0 $@"  # Print the command line for logging
@@ -70,11 +73,17 @@ sidir=`dirname $adapt_yaml`
 sidir_dec=$5 #this is the 1st pass dir with lattices
 
 [[ -f $model_yaml && -f $model_conf ]] || exit 1;
-#oov=`cat $lang/oov.int` || exit 1;
+if [ "$oracle" == "true" ]; then
+  oov=`cat $lang/oov.int` || exit 1;
+fi
 
 for pytable in $model_pytables; do
   [ ! -f $pytable ] && echo "File $pytable not found." && exit 1;
 done
+
+if [ -z "$best_path_cmd" ]; then
+  best_path_cmd=$cmd
+fi
 
 mkdir -p $dir/log
 [[ -d $sdata && $data/feats.scp -ot $sdata ]] || split_data.sh $data $nj || exit 1;
@@ -100,28 +109,38 @@ else
 fi
 
 # splice the features for the context window:
-splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
-feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
+if $do_splicing; then
+  splice_opts="--left-context=$ctx_win --right-context=$ctx_win"
+  feats="ark:splice-feats $splice_opts scp:$sdata/JOB/feats.scp ark:- |"
+  echo "Splicing using Kaldi tools."
+else
+  feats="ark:copy-feats scp:$sdata/JOB/feats.scp ark:- |"
+fi
 
-# get the forward prop pipeline
-feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --model-yaml $model_yaml \
+# Finally add feature_transform and the MLP
+#--priors $class_frame_counts 
+feats="$feats ptgl.sh --cpu --use-sge --cnn-conf $model_conf kaldi_fwdpass.py --debug False --decoder-yaml $model_yaml \
 --model-pytables \"$model_pytables\" --priors $class_frame_counts |"
 
 if [[ $stage -le 0 && -z "$align_dir" ]]; then
 
   #generate alignments using si-model
-  echo "$0: getting best path alignments from $sidir_dec putting alignemts in '$dir'"
-  # Map oovs in reference transcription 
-  #tra="ark:utils/sym2int.pl --map-oov $oov -f 2- $lang/words.txt $sdata/JOB/text|";
-  # We could just use align-mapped in the next line, but it's less efficient as it compiles the
-  # training graphs one by one.
-  #$cmd JOB=1:$nj $dir/log/align.JOB.log \
-  #  compile-train-graphs $dir/tree $dir/final.mdl  $lang/L.fst "$tra" ark:- \| \
-  #  align-compiled-mapped $scale_opts --beam=$beam --retry-beam=$retry_beam $dir/final.mdl ark:- \
-  #    "$feats" "ark,t:|gzip -c >$dir/ali.JOB.gz" || exit 1
-  LMWT=12
-  $cmd JOB=1:$nj $dir/log/best_path.JOB.log lattice-best-path --lm-scale=$LMWT --word-symbol-table=$lang/words.txt \
-    "ark:gunzip -c $sidir_dec/lat.*.gz|" ark,t:$dir/JOB.tra "ark:|gzip -c > $dir/ali.JOB.gz" || exit 1;
+  if [ "$oracle" == "true" ]; then
+    echo "$0: aligning data from $sdata/JOB/text and putting alignemts in '$dir'"
+    # Map oovs in reference transcription "
+    tra="ark:utils/sym2int.pl --map-oov $oov -f 2- $lang/words.txt $sdata/JOB/text|";
+    # We could just use align-mapped in the next line, but it's less efficient as it compiles the
+    # training graphs one by one.
+    $cmd JOB=1:$nj $dir/log/align.JOB.log \
+     compile-train-graphs $srcdir/tree $srcdir/final.mdl  $lang/L.fst "$tra" ark:- \| \
+     align-compiled-mapped $scale_opts --beam=$beam --retry-beam=$retry_beam $dir/final.mdl ark:- \
+       "$feats" "ark:|gzip -c >$dir/ali.JOB.gz" || exit 1
+  else
+    echo "$0: getting best path alignments from $sidir_dec putting alignemts in '$dir'"
+    LMWT=12
+    $cmd JOB=1:$nj $dir/log/best_path.JOB.log lattice-best-path --lm-scale=$LMWT --word-symbol-table=$lang/words.txt \
+      "ark:gunzip -c $sidir_dec/lat.*.gz|" ark,t:$dir/JOB.tra "ark:|gzip -c > $dir/ali.JOB.gz" || exit 1;
+  fi
 
   $cmd JOB=1:1 $dir/ali2pdf.log ali-to-pdf $dir/final.mdl ark:"gunzip -c $dir/ali.*.gz |" \
      ark,t:"$dir/ali.pdf" || exit 1

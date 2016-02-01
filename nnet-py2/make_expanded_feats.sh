@@ -18,7 +18,7 @@ echo "$0 $@"  # Print the command line for logging
 . parse_options.sh || exit 1;
 
 if [ $# != 3 ]; then
-   echo "Usage: $0 [options] <tgt-data-dir> <src-data-dir> <gmm-dir> <log-dir> <fea-dir>"
+   echo "Usage: $0 [options] <tgt-data-dir> <src-data-dir> <gmm-dir> "
    echo "e.g.: $0 data-fmllr/train data/train exp/tri5a exp/make_fmllr_feats/log plp/processed/"
    echo ""
    echo "This script works on CMN + (delta+delta-delta | LDA+MLLT) features; it works out"
@@ -51,7 +51,7 @@ if [ "$force_cmvn" == "true" ]; then
   [ ! -z $transform_dir ] && echo "$0. CMVN forced with --transform-dir. This might introduce a mismatch. Exiting." && exit 1;
   [ -f $gmmdir/final.mat ] && echo "$0. CMVN forced but looks like feats are lda-type. This might introduce a mismatch. Exiting." && exit 1;
 
-  cmvn_opts="--norm-means=true --norm-vars=true"
+  cmvn_opts="--norm-means=true --norm-vars=false"
 else
   cmvn_opts=`cat $gmmdir/cmvn_opts 2>/dev/null`
 fi

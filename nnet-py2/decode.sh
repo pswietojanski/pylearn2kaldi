@@ -12,8 +12,8 @@ class_frame_counts= # You can specify frame count to compute PDF priors
 nj=4
 cmd=run.pl
 max_active=7000
-beam=14.0 # GMM:13.0
-latbeam=9.0 # GMM:6.0
+beam=13.0 # GMM:13.0
+latbeam=7.0 # GMM:6.0
 acwt=0.10 # GMM:0.0833, note: only really affects pruning (scoring is on lattices).
 min_lmwt=9
 max_lmwt=15
@@ -118,6 +118,6 @@ $cmd JOB=1:$nj $dir/log/decode.JOB.log \
 # Run the scoring
 [ ! -x local/score.sh ] && \
   echo "Not scoring because local/score.sh does not exist or not executable." && exit 1;
-local/score.sh --min-lmwt $min_lmwt --max-lmwt $max_lmwt --cmd "$scoring_cmd" $data $graphdir $dir 2>$dir/scoring.log || exit 1;
+local/score.sh --min-lmwt $min_lmwt --max-lmwt $max_lmwt --cmd "$scoring_cmd" $data $graphdir $dir 2>$dir/scoring.log #|| exit 1;
 
 exit 0;
